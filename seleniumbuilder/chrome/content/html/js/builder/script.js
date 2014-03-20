@@ -1,4 +1,10 @@
 builder.breakpointsEnabled = true;
+builder.shareSuiteState = false;
+
+builder.doShareSuiteState = function() {
+  // Can only share suite state if all suite scripts are of the same Selenium version!
+  return builder.shareSuiteState && (builder.suite.areAllScriptsOfVersion(builder.selenium1) || builder.suite.areAllScriptsOfVersion(builder.selenium2));
+};
 
 /**
  * Defines a Script object that encapsulates a single test script.
@@ -61,6 +67,13 @@ builder.Script.prototype = {
       }
     }
     this.steps.push(step);
+  },
+  insertStep: function(step, beforeIndex) {
+    if (beforeIndex < this.steps.length) {
+      this.steps.splice(beforeIndex, 0, step);
+    } else {
+      this.steps.push(step);
+    }
   },
   moveStepToBefore: function(stepID, beforeStepID) {
     var step = this.removeStepWithID(stepID);

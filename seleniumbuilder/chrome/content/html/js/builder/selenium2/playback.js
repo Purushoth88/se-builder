@@ -64,10 +64,12 @@ builder.selenium2.playback.stopTest = function() {
 };
 
 builder.selenium2.playback.runTest = function(postPlayCallback, jobStartedCallback, stepStateCallback, runPausedCallback, initialVars) {
-  if (builder.getScript().steps[0].type == builder.selenium2.stepTypes.get) {
-    builder.deleteURLCookies(builder.getScript().steps[0].url);
+  if (!builder.shareSuiteState) {
+    if (builder.getScript().steps[0].type == builder.selenium2.stepTypes.get) {
+      builder.deleteURLCookies(builder.getScript().steps[0].url);
+    }
+    builder.selenium2.playback.vars = {};
   }
-  builder.selenium2.playback.vars = {};
   if (initialVars) {
     for (var k in initialVars) {
       builder.selenium2.playback.vars[k] = initialVars[k];
@@ -174,6 +176,10 @@ builder.selenium2.playback.startSession = function(sessionStartedCallback) {
         window.bridge.getRecordingWindow().document.title += title_identifier;
         window.setTimeout(builder.selenium2.playback.sessionStartTimeout, 1000);
         return;
+      }
+      // Restore the title if needed.
+      if (window.bridge.getRecordingWindow().document.title.indexOf(title_identifier) != -1) {
+        window.bridge.getRecordingWindow().document.title = original_title;
       }
       builder.selenium2.playback.sessionId = JSON.parse(result).value;
       builder.selenium2.playback.jobStartedCallback();
@@ -816,6 +822,46 @@ builder.selenium2.playback.playbackFunctions = {
     builder.selenium2.playback.findElement(builder.selenium2.playback.param("locator"), function(result) {
       builder.selenium2.playback.execute('getElementAttribute', {id: result.value.ELEMENT, name: builder.selenium2.playback.param("attributeName") }, function(result) {
         builder.selenium2.playback.vars[builder.selenium2.playback.param("variable")] = result.value;
+        builder.selenium2.playback.recordResult({success: true});
+      });
+    });
+  },
+  
+  "verifyElementStyle": function() {
+    builder.selenium2.playback.findElement(builder.selenium2.playback.param("locator"), function(result) {
+      builder.selenium2.playback.execute('getElementValueOfCssProperty', {id: result.value.ELEMENT, propertyName: builder.selenium2.playback.param("propertyName") }, function(result) {
+        if (result.value == builder.selenium2.playback.param("value")) {
+          builder.selenium2.playback.recordResult({success: true});
+        } else {
+          builder.selenium2.playback.recordResult({success: false, message: _t('sel2_css_value_doesnt_match', builder.selenium2.playback.param("propertyName"), result.value, builder.selenium2.playback.param("value"))});
+        }
+      });
+    });
+  },
+  "assertElementStyle": function() {
+    builder.selenium2.playback.findElement(builder.selenium2.playback.param("locator"), function(result) {
+      builder.selenium2.playback.execute('getElementValueOfCssProperty', {id: result.value.ELEMENT, propertyName: builder.selenium2.playback.param("propertyName") }, function(result) {
+        if (result.value == builder.selenium2.playback.param("value")) {
+          builder.selenium2.playback.recordResult({success: true});
+        } else {
+          builder.selenium2.playback.recordError(_t('sel2_css_value_doesnt_match', builder.selenium2.playback.param("propertyName"), result.value, builder.selenium2.playback.param("value")));
+        }
+      });
+    });
+  },
+  "waitForElementStyle": function() {
+    builder.selenium2.playback.wait(function(callback) {
+      builder.selenium2.playback.findElement(builder.selenium2.playback.param("locator"), function(result) {
+        builder.selenium2.playback.execute('getElementValueOfCssProperty', {id: result.value.ELEMENT, propertyName: builder.selenium2.playback.param("propertyName") }, function(result) {
+          callback(result.value == builder.selenium2.playback.param("value"));
+        }, /*error*/ function() { callback(false); });
+      }, /*error*/ function() { callback(false); });
+    });
+  },
+  "storeElementStyle": function() {
+    builder.selenium2.playback.findElement(builder.selenium2.playback.param("locator"), function(result) {
+      builder.selenium2.playback.execute('getElementValueOfCssProperty', {id: result.value.ELEMENT, propertyName: builder.selenium2.playback.param("propertyName") }, function(result) {
+		    builder.selenium2.playback.vars[builder.selenium2.playback.param("variable")] = result.value;
         builder.selenium2.playback.recordResult({success: true});
       });
     });

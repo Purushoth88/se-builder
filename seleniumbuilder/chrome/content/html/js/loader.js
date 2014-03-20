@@ -1,5 +1,5 @@
 var builder = {};
-builder.version = "2.1.1";
+builder.version = "2.2.2";
 
 builder.loader = {};
 
@@ -228,6 +228,7 @@ builder.loader.mainScripts = [
   "builder/datasource/none.js",
   "builder/datasource/manual.js",
   "builder/datasource/json.js",
+  "builder/datasource/xml.js",
   "builder/ignition.js"
 ];
 

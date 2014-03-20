@@ -109,6 +109,8 @@ m.menu_enable_breakpoints = "Breakpoints aktivieren";
 m.menu_clear_breakpoints = "Alle Breakpoints löschen";
 m.clear_breakpoints_confirm = "Wollen Sie wirklich alle Breakpoints in diesem Skript löschen?";
 m.menu_playback_variables = "Variablen...";
+m.menu_share_state_across_suite = "Skripts in einer Suite behalten Cookies und Variablen";
+m.menu_dont_share_state_across_suite = "√ Skripts in einer Suite behalten Cookies und Variablen";
 
 // Variables
 m.variables = "Variablen";
@@ -125,6 +127,7 @@ m.clear_results = "Resultat zurücksetzen";
 m.connecting = "Verbinde...";
 m.record_verification = "Verifikation aufzeichnen";
 m.stop_recording = "Aufzeichnung beenden";
+m.record_mouseovers = "Mouseovers aufzeichnen";
 
 // Convert dialog
 m.script_conversion = "Konvertieren";
@@ -202,6 +205,8 @@ m.sel2_false = "nicht wahr";
 m.sel2_untitled_run = "Ohne Titel";
 m.sel2_server_error = "Server-Fehler";
 m.sel2_must_playback_in_foreground = "Achtung: Beim Abspielen muss das Abspiel-Fenster im Vordergrund bleiben.";
+m.sel2_eval_failed = "Skript-Ausführung fehlgeschlagen.";
+m.sel2_eval_false = "Skriptresultat \"{0}\" stimmt nicht mit \"{1}\" überein.";
 
 // Step display
 m.param_expr_info = "<br>Parameter-Ausdrücke der Form  <i>${name der variable}</i> werden durch den Inhalt dieser Variable ersetzt.";
@@ -215,9 +220,13 @@ m.step_new_below = "neuer Schritt unten";
 m.step_copy = "kopieren";
 m.step_cut = "ausschneiden";
 m.step_paste = "einsetzen";
+m.step_record_before = "vorher aufzeichnen";
+m.step_record_after = "nachher aufzeichnen";
 m.step_run = "Schritt abspielen";
 m.step_run_from_here = "ab hier abspielen";
 m.step_run_to_here = "bis hier abspielen";
+m.step_add_breakpoint = "+ breakpoint";
+m.step_remove_breakpoint = "- breakpoint";
 m.playback_not_supported_warning = "Achtung: dieser Schrittyp kann nicht abgespielt werden.";
 m.edit_p = "{0} ändern";
 m.not = "nicht";
@@ -228,6 +237,8 @@ m.script_is_empty = "Skript ist leer.";
 m.suite_is_empty = "Suite ist leer.";
 m.suite = "Suite";
 m.could_not_open_suite = "Suite konnte nicht geöffnet werden.";
+m.sel1_no_table_tag = "Keine <table> im Suite-Dokument";
+m.sel1_no_command_found = "Unbekanntes Kommando im Testskript";
 
 // Selenium 2 Categories
 m.navigation_sel2_cat = "Navigieren";
@@ -348,7 +359,13 @@ m.p_name = "Name";
 m.menu_data = "Daten";
 m.no_source = "Keine";
 m.manual_entry = "Einzeleingabe";
+m.json_file_path = "Pfad JSON-Dokument";
+m.xml_file_path = "Pfad XML-Dokument";
 m.row = "Zeile {0}"
+m.inputs = "Inputs";
+m.string = "Text";
+m.integer = "Zahl";
+m.int = "Zahl";
 
 
 

@@ -107,11 +107,13 @@ m.menu_save_suite_as = "Save suite as...";
 m.menu_export_suite = "Export suite";
 m.lose_changes_warning = "If you continue, you will lose all your recent changes.";
 m.menu_debug = "Debug";
-m.menu_disable_breakpoints = "Disable breakpoints";
+m.menu_disable_breakpoints = "√ Enable breakpoints";
 m.menu_enable_breakpoints = "Enable breakpoints";
 m.menu_clear_breakpoints = "Clear all breakpoints";
 m.clear_breakpoints_confirm = "Are you sure you want to clear all breakpoints from the current script?";
 m.menu_playback_variables = "Playback variables...";
+m.menu_share_state_across_suite = "Share state across suite";
+m.menu_dont_share_state_across_suite = "√ Share state across suite";
 
 // Variables
 m.variables = "Variables";
@@ -130,6 +132,7 @@ m.clear_results = "Clear Results";
 m.connecting = "Connecting...";
 m.record_verification = "Record a verification";
 m.stop_recording = "Stop recording";
+m.record_mouseovers = "Record mouseovers";
 
 // Convert dialog
 m.script_conversion = "Conversion";
@@ -196,6 +199,7 @@ m.sel2_title_does_not_match = "Title \"{0}\" does not match \"{1}\".";
 m.sel2_element_not_selected = "Element not selected.";
 m.sel2_element_value_doesnt_match = "Element value \"{0}\" does not match \"{1}\".";
 m.sel2_attribute_value_doesnt_match = "\"{0}\" attribute value \"{1}\" does not match \"{2}\".";
+m.sel2_css_value_doesnt_match = "\"{0}\" CSS property value \"{1}\" does not match \"{2}\".";
 m.sel2_cookie_value_doesnt_match = "\"{0}\" cookie value \"{1}\" does not match \"{2}\".";
 m.sel2_no_cookie_found = "Cookie \"{0}\" not found.";
 m.sel2_step_not_implemented_for_playback = "{0} not implemented for playback.";
@@ -222,6 +226,8 @@ m.step_new_below = "new step below";
 m.step_copy = "copy";
 m.step_cut = "cut";
 m.step_paste = "paste";
+m.step_record_before = "record before";
+m.step_record_after = "record after";
 m.step_run = "run step";
 m.step_run_from_here = "run from here";
 m.step_run_to_here = "run to here";
@@ -237,6 +243,8 @@ m.script_is_empty = "Script is empty.";
 m.suite_is_empty = "Suite is empty.";
 m.suite = "Suite";
 m.could_not_open_suite = "Could not open suite";
+m.sel1_no_table_tag = "Failed to load test suite: <table> tag not found";
+m.sel1_no_command_found = "Unknown commant in test script";
 
 // Selenium 1 Categories
 m.action_cat = "action";
@@ -279,6 +287,7 @@ m.menu_data = "Data";
 m.no_source = "No Data";
 m.manual_entry = "Manual Entry";
 m.json_file_path = "JSON File Path";
+m.xml_file_path = "XML File Path";
 m.row = "Row {0}"
 m.inputs = "Inputs";
 m.string = "String";

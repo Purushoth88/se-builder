@@ -124,7 +124,7 @@ builder.stepdisplay.updateStep = function(stepID) {
     jQuery('#' + stepID + '-p' + i).show();
     jQuery('#' + stepID + '-p' + i + '-name').text(builder.translate.translateParamName(paramNames[i], step.type.getName()));
     if (step.type.getParamType(paramNames[i]) == "locator") {
-      jQuery('#' + stepID + '-p' + i + '-value').text(step[paramNames[i]].getName(script.seleniumVersion) + ": " + esc(step[paramNames[i]].getValue()));
+      jQuery('#' + stepID + '-p' + i + '-value').text(step[paramNames[i]].getName(script.seleniumVersion) + ": " + step[paramNames[i]].getValue());
     } else {
       jQuery('#' + stepID + '-p' + i + '-value').text(esc(step[paramNames[i]]));
     }
@@ -162,6 +162,19 @@ builder.stepdisplay.updateStep = function(stepID) {
   }
   if (step.failureMessage) {
     jQuery("#" + step.id + "-error").show().html(step.failureMessage);
+  }
+  
+  // Show whether it's the insertion point for recording.
+  var stepIndex = script.getStepIndexForID(stepID);
+  if (builder.record.recording && stepIndex == builder.record.insertionIndex) {
+    jQuery("#" + step.id + "-content").addClass('b-recording-insertion-point-top');
+  } else {
+    jQuery("#" + step.id + "-content").removeClass('b-recording-insertion-point-top');
+  }
+  if (builder.record.recording && builder.record.insertionIndex >= script.steps.length && step == script.steps[script.steps.length - 1]) {
+    jQuery("#" + step.id + "-content").addClass('b-recording-insertion-point-bottom');
+  } else {
+    jQuery("#" + step.id + "-content").removeClass('b-recording-insertion-point-bottom');
   }
 };
 
@@ -285,7 +298,7 @@ function stopSearchers(stepID, pIndex) {
   searchers = [];
   hasSearchers = false;
   if (wasRecording) {
-    builder.record.continueRecording();
+    builder.record.continueRecording(/* insert index */ builder.getScript().steps.length);
   }
 }
 
@@ -456,6 +469,9 @@ function getTypeInfo(type) {
 }
 
 function editType(stepID) {
+  if (jQuery('#' + stepID + '-edit-div').length > 0) {
+    return;
+  }
   var step = builder.getScript().getStepWithID(stepID);
   
   var catL = newNode(
@@ -526,6 +542,9 @@ function editType(stepID) {
 }
 
 function editParam(stepID, pIndex) {
+  if (jQuery('#' + stepID + '-p' + pIndex + '-edit-div').length > 0) {
+    return;
+  }
   var script = builder.getScript();
   var step = script.getStepWithID(stepID);
   var pName = step.getParamNames()[pIndex];
@@ -548,12 +567,12 @@ function editParam(stepID, pIndex) {
         if (!step[pName].values[step[pName].preferredMethod] || step[pName].values[step[pName].preferredMethod].length == 0)
         {
           step[pName].preferredAlternative = 0;
-          step[pName].values[locMethod] = [deesc(jQuery('#' + stepID + '-p' + pIndex + '-edit-input').val())];
+          step[pName].values[locMethod] = [jQuery('#' + stepID + '-p' + pIndex + '-edit-input').val()];
         } else {
           if (step[pName].preferredAlternative >= step[pName].values[step[pName].preferredMethod].length) {
             step[pName].preferredAlternative = 0;
           }
-          step[pName].values[locMethod][step[pName].preferredAlternative] = deesc(jQuery('#' + stepID + '-p' + pIndex + '-edit-input').val());
+          step[pName].values[locMethod][step[pName].preferredAlternative] = jQuery('#' + stepID + '-p' + pIndex + '-edit-input').val();
         }
       }
       jQuery('#' + stepID + '-p' + pIndex + '-edit-div').remove();
@@ -569,7 +588,7 @@ function editParam(stepID, pIndex) {
       },
       typeDropDown,
       ": ",
-      newNode('input', {id: stepID + '-p' + pIndex + '-edit-input', type:'text', value: esc(step[pName].getValue())}),
+      newNode('input', {id: stepID + '-p' + pIndex + '-edit-input', type:'text', value: step[pName].getValue()}),
       newNode('a', _t('ok'), {
         id: stepID + '-p' + pIndex + '-OK',
         class: 'button',
@@ -582,7 +601,7 @@ function editParam(stepID, pIndex) {
           var locMethodName = jQuery('#' + tdd_id).val();
           var locMethod = builder.locator.methodForName(script.seleniumVersion, locMethodName);
           if (locMethod) {
-            builder.locator.highlight(locMethod, deesc(jQuery('#' + stepID + '-p' + pIndex + '-edit-input').val()));
+            builder.locator.highlight(locMethod, jQuery('#' + stepID + '-p' + pIndex + '-edit-input').val());
           }
         }
       }),
@@ -683,11 +702,11 @@ function createAltItem(step, pIndex, pName, altName, altValue, altIndex) {
     'li',
     newNode(
       'a',
-      altName + ": " + esc(altValue),
+      altName + ": " + altValue,
       {
         click: function(e) {
           jQuery('#' + step.id + '-p' + pIndex + '-locator-type-chooser').val(altName);
-          jQuery('#' + step.id + '-p' + pIndex + '-edit-input').val(esc(altValue));
+          jQuery('#' + step.id + '-p' + pIndex + '-edit-input').val(altValue);
           jQuery('#' + step.id + '-p' + pIndex + '-edit-input').data('alt', altIndex);
         }
       }
@@ -755,6 +774,20 @@ function addStep(step) {
           id: step.id + 'paste',
           class: 'b-task',
           click: function() { pasteStep(step.id); }
+        }),
+        newNode('a', _t('step_record_before'), {
+          id: step.id + 'record_before',
+          class: 'b-task',
+          click: function() {
+            builder.record.continueRecording(builder.getScript().getStepIndexForID(step.id));
+          }
+        }),
+        newNode('a', _t('step_record_after'), {
+          id: step.id + 'record_after',
+          class: 'b-task',
+          click: function() {
+            builder.record.continueRecording(builder.getScript().getStepIndexForID(step.id) + 1);
+          }
         }),
         newNode('a', _t('step_run'), {
           id: step.id + 'run-step',

@@ -40,7 +40,7 @@ builder.selenium2.rcPlayback.maxWaitCycles = 100;
 
 builder.selenium2.rcPlayback.runs = [];
 
-builder.selenium2.rcPlayback.makeRun = function(settings, script, postRunCallback, jobStartedCallback, stepStateCallback, initialVars) {
+builder.selenium2.rcPlayback.makeRun = function(settings, script, postRunCallback, jobStartedCallback, stepStateCallback, initialVars, pausedCallback, preserveRunSession) {
   var ivs = {};
   if (initialVars) {
     for (var k in initialVars) {
@@ -55,7 +55,8 @@ builder.selenium2.rcPlayback.makeRun = function(settings, script, postRunCallbac
     currentStep: null,
     script: script,
     requestStop: false,
-    playResult: { success: false},
+    playResult: { success: false },
+    pausedOnBreakpoint: false,
     vars: ivs,
     /** How many wait cycles have been run. */
     waitCycle: 0,
@@ -69,12 +70,48 @@ builder.selenium2.rcPlayback.makeRun = function(settings, script, postRunCallbac
     pauseInterval: null,
     postRunCallback: postRunCallback || null,
     jobStartedCallback: jobStartedCallback || null,
-    stepStateCallback: stepStateCallback || function(){}
+    stepStateCallback: stepStateCallback || function() {},
+    pausedCallback: pausedCallback || function() {},
+    /** Whether to preserve the playback session at the end of the run rather than shutting it down. */
+    preserveRunSession: preserveRunSession
   };
+};
+
+builder.selenium2.rcPlayback.getVars = function(r, callback) {
+  callback(r.vars);
+};
+
+builder.selenium2.rcPlayback.setVar = function(r, k, v, callback) {
+  if (v == null) {
+    delete r.vars[k];
+  } else {
+    r.vars[k] = v;
+  }
+  if (callback) { callback(); }
 };
 
 builder.selenium2.rcPlayback.isRunning = function() {
   return builder.selenium2.rcPlayback.runs.length > 0;
+};
+
+builder.selenium2.rcPlayback.runReusing = function(r, postRunCallback, jobStartedCallback, stepStateCallback, initialVars, pausedCallback, preserveRunSession) {
+  var settings = {hostPort:r.hostPort, browserstring:r.browserstring};
+  var r2 = builder.selenium2.rcPlayback.makeRun(settings, builder.getScript(), postRunCallback, jobStartedCallback, stepStateCallback, initialVars, pausedCallback, preserveRunSession);
+  r2.vars = {};
+  for (var k in r.vars) {
+    r2.vars[k] = r.vars[k];
+  }
+  if (initialVars) {
+    for (var k in initialVars) {
+      r2.vars[k] = initialVars[k];
+    }
+  }
+  r2.sessionID = r.sessionID;
+  builder.selenium2.rcPlayback.runs.push(r2);
+  r2.jobStartedCallback();
+  r2.playResult.success = true;
+  builder.selenium2.rcPlayback.playNextStep(r2);
+  return r2;
 };
 
 /**
@@ -83,8 +120,8 @@ builder.selenium2.rcPlayback.isRunning = function() {
  * @param jobStartedCallback function(serverResponse:string)
  * @param stepStateCallback function(run:obj, script:Script, step:Step, stepIndex:int, state:builder.stepdisplay.state.*, message:string|null, error:string|null, percentProgress:int)
  */
-builder.selenium2.rcPlayback.run = function(settings, postRunCallback, jobStartedCallback, stepStateCallback, initialVars) {
-  var r = builder.selenium2.rcPlayback.makeRun(settings, builder.getScript(), postRunCallback, jobStartedCallback, stepStateCallback, initialVars);
+builder.selenium2.rcPlayback.run = function(settings, postRunCallback, jobStartedCallback, stepStateCallback, initialVars, pausedCallback, preserveRunSession) {
+  var r = builder.selenium2.rcPlayback.makeRun(settings, builder.getScript(), postRunCallback, jobStartedCallback, stepStateCallback, initialVars, pausedCallback, preserveRunSession);
   
   var hostPort = settings.hostPort;
   var browserstring = settings.browserstring;
@@ -151,10 +188,35 @@ builder.selenium2.rcPlayback.startJob = function(r, response) {
   });
 };
 
+builder.selenium2.rcPlayback.continueTests = function() {
+  for (var i = 0; i < builder.selenium2.rcPlayback.runs.length; i++) {
+    var r = builder.selenium2.rcPlayback.runs[i];
+    if (r.pausedOnBreakpoint) {
+      builder.selenium2.rcPlayback.continueRun(r);
+    }
+  }
+};
+
+builder.selenium2.rcPlayback.continueRun = function(r) {
+  r.pausedOnBreakpoint = false;
+  r.stepStateCallback(r, r.script, r.currentStep, r.currentStepIndex, builder.stepdisplay.state.RUNNING, null, null);
+  try {
+    builder.selenium2.rcPlayback.types[r.currentStep.type.getName()](r, r.currentStep);
+  } catch (e) {
+    builder.selenium2.rcPlayback.recordError(r, e);
+  }
+};
+
 builder.selenium2.rcPlayback.playNextStep = function(r) {
   r.currentStepIndex++;
   if (!r.requestStop && r.currentStepIndex < r.script.steps.length) {
     r.currentStep = r.script.steps[r.currentStepIndex];
+    if (builder.breakpointsEnabled && r.currentStep.breakpoint) {
+      r.pausedOnBreakpoint = true;
+      r.stepStateCallback(r, r.script, r.currentStep, r.currentStepIndex, builder.stepdisplay.state.BREAKPOINT, null, null);
+      r.pausedCallback();
+      return;
+    }
     r.stepStateCallback(r, r.script, r.currentStep, r.currentStepIndex, builder.stepdisplay.state.RUNNING, null, null);
     try {
       builder.selenium2.rcPlayback.types[r.currentStep.type.getName()](r, r.currentStep);
@@ -167,19 +229,20 @@ builder.selenium2.rcPlayback.playNextStep = function(r) {
 };
 
 builder.selenium2.rcPlayback.shutdown = function(r) {
-  // Finish session.
   jQuery('#edit-rc-connecting').hide();
-  builder.selenium2.rcPlayback.send(r, "DELETE", "", "", function() {
-    builder.selenium2.rcPlayback.runs = builder.selenium2.rcPlayback.runs.filter(function(r2) { return r2 != r; });
-    if (r.postRunCallback) {
-      r.postRunCallback(r.playResult);
-    }
-  }, function() {
-    builder.selenium2.rcPlayback.runs = builder.selenium2.rcPlayback.runs.filter(function(r2) { return r2 != r; });
-    if (r.postRunCallback) {
-      r.postRunCallback(r.playResult);
-    }
-  });
+  if (r.preserveRunSession) {
+    builder.selenium2.rcPlayback.postShutdown(r);
+  } else {
+    // Finish session.
+    builder.selenium2.rcPlayback.send(r, "DELETE", "", "", builder.selenium2.rcPlayback.postShutdown, builder.selenium2.rcPlayback.postShutdown);
+  }
+};
+
+builder.selenium2.rcPlayback.postShutdown = function(r) {
+  builder.selenium2.rcPlayback.runs = builder.selenium2.rcPlayback.runs.filter(function(r2) { return r2 != r; });
+  if (r.postRunCallback) {
+    r.postRunCallback(r.playResult);
+  }
 };
 
 builder.selenium2.rcPlayback.getTestRuns = function() {
@@ -187,7 +250,11 @@ builder.selenium2.rcPlayback.getTestRuns = function() {
 };
 
 builder.selenium2.rcPlayback.stopTest = function(r) {
-  r.requestStop = true;
+  if (r.pausedOnBreakpoint) {
+    builder.selenium2.rcPlayback.shutdown(r);
+  } else {
+    r.requestStop = true;
+  }
 };
 
 builder.selenium2.rcPlayback.hasError = function(response) {
@@ -958,6 +1025,49 @@ builder.selenium2.rcPlayback.types.waitForElementAttribute = function(r, step) {
 builder.selenium2.rcPlayback.types.storeElementAttribute = function(r, step) {
   builder.selenium2.rcPlayback.findElement(r, builder.selenium2.rcPlayback.param(r, "locator"), function(r, id) {
     builder.selenium2.rcPlayback.send(r, "GET", "/element/" + id + "/attribute/" + builder.selenium2.rcPlayback.param(r, "attributeName"), "", function(r, response) {
+      r.vars[builder.selenium2.rcPlayback.param(r, "variable")] = response.value;
+      builder.selenium2.rcPlayback.recordResult(r, {success: true});
+    });
+  });
+};
+
+builder.selenium2.rcPlayback.types.verifyElementStyle = function(r, step) {
+  builder.selenium2.rcPlayback.findElement(r, builder.selenium2.rcPlayback.param(r, "locator"), function(r, id) {
+    builder.selenium2.rcPlayback.send(r, "GET", "/element/" + id + "/css/" + builder.selenium2.rcPlayback.param(r, "propertyName"), "", function(r, response) {
+      if (response.value == builder.selenium2.rcPlayback.param(r, "value")) {
+        builder.selenium2.rcPlayback.recordResult(r, {success: true});
+      } else {
+        builder.selenium2.rcPlayback.recordResult(r, {success: false, message: _t('sel2_css_value_doesnt_match', builder.selenium2.rcPlayback.param(r, "propertyName"), response.value, builder.selenium2.rcPlayback.param(r, "value"))});
+      }
+    });
+  });
+};
+
+builder.selenium2.rcPlayback.types.assertElementStyle = function(r, step) {
+  builder.selenium2.rcPlayback.findElement(r, builder.selenium2.rcPlayback.param(r, "locator"), function(r, id) {
+    builder.selenium2.rcPlayback.send(r, "GET", "/element/" + id + "/css/" + builder.selenium2.rcPlayback.param(r, "propertyName"), "", function(r, response) {
+      if (response.value == builder.selenium2.rcPlayback.param(r, "value")) {
+        builder.selenium2.rcPlayback.recordResult(r, {success: true});
+      } else {
+        builder.selenium2.rcPlayback.recordError(r, _t('sel2_css_value_doesnt_match', builder.selenium2.rcPlayback.param(r, "propertyName"), response.value, builder.selenium2.rcPlayback.param(r, "value")));
+      }
+    });
+  });
+};
+
+builder.selenium2.rcPlayback.types.waitForElementStyle = function(r, step) {
+  builder.selenium2.rcPlayback.wait(r, function(r, callback) {
+    builder.selenium2.rcPlayback.findElement(r, builder.selenium2.rcPlayback.param(r, "locator"), function(r, id) {
+      builder.selenium2.rcPlayback.send(r, "GET", "/element/" + id + "/css/" + builder.selenium2.rcPlayback.param(r, "propertyName"), "", function(r, response) {
+        callback(r, response.value == builder.selenium2.rcPlayback.param(r, "value"));
+      }, /*error*/ function(r) { callback(r, false); });
+    }, /*error*/ function(r) { callback(r, false); });
+  });
+};
+
+builder.selenium2.rcPlayback.types.storeElementStyle = function(r, step) {
+  builder.selenium2.rcPlayback.findElement(r, builder.selenium2.rcPlayback.param(r, "locator"), function(r, id) {
+    builder.selenium2.rcPlayback.send(r, "GET", "/element/" + id + "/css/" + builder.selenium2.rcPlayback.param(r, "propertyName"), "", function(r, response) {
       r.vars[builder.selenium2.rcPlayback.param(r, "variable")] = response.value;
       builder.selenium2.rcPlayback.recordResult(r, {success: true});
     });
