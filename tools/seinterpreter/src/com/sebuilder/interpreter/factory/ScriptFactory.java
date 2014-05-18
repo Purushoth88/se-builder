@@ -117,14 +117,14 @@ public class ScriptFactory {
 				JSONObject data = o.getJSONObject("data");
 				String sourceName = data.getString("source");
 				HashMap<String, String> config = new HashMap<String, String>();
-				if (data.has("config") && data.getJSONObject("config").has(sourceName)) {
-					JSONObject cfg = data.getJSONObject("config").getJSONObject(sourceName);
+				if (data.has("configs") && data.getJSONObject("configs").has(sourceName)) {
+					JSONObject cfg = data.getJSONObject("configs").getJSONObject(sourceName);
 					for (Iterator<String> it = cfg.keys(); it.hasNext();) {
 						String key = it.next();
 						config.put(key, cfg.getString(key));
 					}
 				}
-				script.dataRows = dataSourceFactory.getData(sourceName, config);
+				script.dataRows = dataSourceFactory.getData(sourceName, config, f.getAbsoluteFile().getParentFile());
 			}
 			return scripts;
 		} catch (JSONException e) {
@@ -152,6 +152,15 @@ public class ScriptFactory {
 						throw new IOException("Script file " + path + " not found.");
 					}
 				}
+			}
+			boolean shareState = o.optBoolean("shareState", false);
+			if (shareState && scripts.size() > 1) {
+				for (Script s : scripts) {
+					s.closeDriver = false;
+					s.usePreviousDriverAndVars = true;
+				}
+				scripts.get(0).usePreviousDriverAndVars = false;
+				scripts.get(scripts.size() - 1).closeDriver = true;
 			}
 			return scripts;
 		} catch (JSONException e) {

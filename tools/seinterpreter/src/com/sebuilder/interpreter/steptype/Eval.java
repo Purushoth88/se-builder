@@ -22,7 +22,8 @@ import com.sebuilder.interpreter.TestRun;
 public class Eval implements Getter {
 	@Override
 	public String get(TestRun ctx) {
-		return ctx.driver().executeScript(ctx.string("script")).toString();
+		Object result = ctx.driver().executeScript(ctx.string("script"));
+		return result == null ? null : result.toString();
 	}
 
 	@Override

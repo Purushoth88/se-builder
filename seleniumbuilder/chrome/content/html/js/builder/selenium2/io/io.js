@@ -16,6 +16,7 @@ builder.selenium2.io.parseScript = function(text, path) {
     script.steps.push(builder.stepFromJSON(scriptJSON.steps[i], builder.selenium2));
   }
   
+  script.timeoutSeconds = scriptJSON.timeoutSeconds || 60;
   if (scriptJSON.data) {
     script.data = scriptJSON.data;
   }
@@ -246,6 +247,7 @@ builder.selenium2.io.createLangFormatter = function(lang_info) {
         start = start.replace(new RegExp("\\{" + k + "\\}", "g"), userParams[k]);
       }
       start = start.replace(/\{scriptName\}/g, name.substr(0, name.indexOf(".")));
+      start = start.replace(/\{timeoutSeconds\}/g, "" + script.timeoutSeconds);
       t += start;
       var used_vars = {};
       stepsLoop: for (var i = 0; i < script.steps.length; i++) {
@@ -397,7 +399,11 @@ builder.selenium2.io.parseSuite = function(text, path, callback) {
     callback(null, _t('could_not_open_suite'));
     return;
   }
-  var si = { 'scripts': [], 'path': {'path': path.path, 'where': path.where, 'format': builder.selenium2.io.suiteFormats[0] } };
+  var si = {
+    'scripts': [],
+    'path': {'path': path.path, 'where': path.where, 'format': builder.selenium2.io.suiteFormats[0] },
+    'shareState': !!suite.shareState
+  };
   function loadScript(i) {
     builder.io.loadPath(suite.scripts[i], path, function(loaded) {
       if (loaded) {

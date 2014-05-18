@@ -26,6 +26,7 @@ m.local_playback_available = "Local Playback";
 m.yes = "yes"; // Yes means yes.
 m.no = "no";   // No means no.
                // Oh no! Politics in our source code!
+m.search = "Search";
 
 // Plugins
 m.plugins_title = "Plugins";
@@ -86,6 +87,7 @@ m.menu_file = "File";
 m.menu_record = "Record";
 m.menu_run = "Run";
 m.menu_suite = "Suite";
+m.menu_settings = "Script settings...";
 m.menu_save = "Save";
 m.menu_save_to = "Save to {0}";
 m.menu_save_as = "Save as...";
@@ -176,6 +178,10 @@ m.select_a_file = "Select a File";
 
 // Record
 m.record_invalid_url = "The URL is not valid and cannot be loaded.";
+
+// Settings
+m.script_settings = "Script Settings";
+m.timeout_seconds = "Timeout (seconds)";
 
 // Sel 1
 m.sel1_could_not_open_suite_script = "Could not open suite: Could not open script {0}";
@@ -288,6 +294,8 @@ m.no_source = "No Data";
 m.manual_entry = "Manual Entry";
 m.json_file_path = "JSON File Path";
 m.xml_file_path = "XML File Path";
+m.csv_file_path = "CSV File Path";
+m.csv_parse_error = "CSV parse error: {0}";
 m.row = "Row {0}"
 m.inputs = "Inputs";
 m.string = "String";

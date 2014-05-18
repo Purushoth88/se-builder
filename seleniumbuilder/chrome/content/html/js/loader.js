@@ -1,5 +1,5 @@
 var builder = {};
-builder.version = "2.2.2";
+builder.version = "2.2.3";
 
 builder.loader = {};
 
@@ -132,6 +132,7 @@ builder.loader.mainScripts = [
   "lib/browserdetect.js",
   "lib/json2.js",
   "lib/js-xpath.js",
+  "lib/jquery.csv-0.71.min.js",
   // Load Selenium IDE Formats & TestCase/Suite
   /*"selenium-ide/xhtml-entities.js",
   "selenium-ide/preferences.js",
@@ -157,6 +158,7 @@ builder.loader.mainScripts = [
   "builder/i18n/fr.js",
   "builder/i18n/jp.js",
   "builder/i18n/pt-br.js",
+  "builder/i18n/nl.js",
   "builder/io.js",
   "builder/url.js",
   "builder/script.js",
@@ -222,6 +224,7 @@ builder.loader.mainScripts = [
   "builder/dialogs/runall.js",
   "builder/dialogs/variables.js",
   "builder/dialogs/inputs.js",
+  "builder/dialogs/settings.js",
   "builder/gui/stepstable.js",
   "builder/gui/translate.js",
   "builder/datasource/sources.js",
@@ -229,6 +232,7 @@ builder.loader.mainScripts = [
   "builder/datasource/manual.js",
   "builder/datasource/json.js",
   "builder/datasource/xml.js",
+  "builder/datasource/csv.js",
   "builder/ignition.js"
 ];
 

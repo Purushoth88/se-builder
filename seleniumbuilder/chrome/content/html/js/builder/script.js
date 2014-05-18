@@ -1,10 +1,4 @@
 builder.breakpointsEnabled = true;
-builder.shareSuiteState = false;
-
-builder.doShareSuiteState = function() {
-  // Can only share suite state if all suite scripts are of the same Selenium version!
-  return builder.shareSuiteState && (builder.suite.areAllScriptsOfVersion(builder.selenium1) || builder.suite.areAllScriptsOfVersion(builder.selenium2));
-};
 
 /**
  * Defines a Script object that encapsulates a single test script.
@@ -18,6 +12,7 @@ builder.Script = function(seleniumVersion) {
   this.saveRequired = false;
   this.data = {'configs':{}, 'source': 'none'};
   this.inputs = [];
+  this.timeoutSeconds = 60;
 };
 
 builder.Script.prototype = {

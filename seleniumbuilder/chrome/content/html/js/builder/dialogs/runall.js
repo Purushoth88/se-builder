@@ -90,6 +90,11 @@ builder.dialogs.runall.run = function() {
   var scripts = builder.suite.scripts;
   // Load in script data rows.
   builder.dialogs.runall.getAllRows(scripts, function(scriptIndexToRows) {
+    // Don't play back if there was a loading error.
+    for (var i = 0; i < scripts.length; i++) {
+      if (!scriptIndexToRows[i]) { return; }
+    }
+    
     // Generate run objects, one for each script playback to do.
     builder.dialogs.runall.runs = [];
     var runIndex = 0;
@@ -141,7 +146,7 @@ builder.dialogs.runall.run = function() {
     builder.dialogs.runall.dialog = newNode('div', {'class': 'dialog'});
     jQuery(builder.dialogs.runall.dialog)
       .append(builder.dialogs.runall.info_p)
-      .append(builder.dialogs.runall.scriptlist)
+      .append(newNode('div', {'class': 'runslist'}, builder.dialogs.runall.scriptlist))
       .append(newNode('p',
         newNode('span', {id: 'suite-playback-stop'}, builder.dialogs.runall.stop_b),
         newNode('span', {id: 'suite-playback-close', style: 'display: none;'}, builder.dialogs.runall.close_b)

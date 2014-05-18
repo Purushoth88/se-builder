@@ -22,8 +22,6 @@ builder.selenium2.playback.playResult = null;
 builder.selenium2.playback.stopRequest = false;
 /** What interval to check waits for. */
 builder.selenium2.playback.waitIntervalAmount = 300;
-/** How many wait cycles are run before waits time out. */
-builder.selenium2.playback.maxWaitCycles = 60000 / builder.selenium2.playback.waitIntervalAmount;
 /** How many wait cycles have been run. */
 builder.selenium2.playback.waitCycle = 0;
 /** The wait interval. */
@@ -32,8 +30,6 @@ builder.selenium2.playback.waitInterval = null;
 builder.selenium2.playback.vars = {};
 /** What interval to check implicit waits for. */
 builder.selenium2.playback.implicitWaitTimeoutAmount = 300;
-/** How many implicit wait cycles are run before waits time out. */
-builder.selenium2.playback.maxImplicitWaitCycles = 60000 / builder.selenium2.playback.implicitWaitTimeoutAmount;
 /** How many implicit wait cycles have been run. */
 builder.selenium2.playback.implicitWaitCycle = 0;
 /** The implicit wait timeout. */
@@ -51,6 +47,16 @@ builder.selenium2.playback.prompts_tab_modal_enabled = true;
 /** Whether playback is currently paused on a breakpoint. */
 builder.selenium2.playback.pausedOnBreakpoint = false;
 
+/** How many wait cycles are run before waits time out. */
+builder.selenium2.playback.maxWaitCycles = function() {
+  return builder.selenium2.playback.script.timeoutSeconds * 1000 / builder.selenium2.playback.waitIntervalAmount;
+};
+
+/** How many implicit wait cycles are run before waits time out. */
+builder.selenium2.playback.maxImplicitWaitCycles = function() {
+  return builder.selenium2.playback.script.timeoutSeconds * 1000 / builder.selenium2.playback.implicitWaitTimeoutAmount;
+}
+
 builder.selenium2.playback.currentStepIndex = function() {
   return builder.selenium2.playback.script.getStepIndexForID(builder.selenium2.playback.currentStep.id);
 };
@@ -64,7 +70,7 @@ builder.selenium2.playback.stopTest = function() {
 };
 
 builder.selenium2.playback.runTest = function(postPlayCallback, jobStartedCallback, stepStateCallback, runPausedCallback, initialVars) {
-  if (!builder.shareSuiteState) {
+  if (!builder.doShareSuiteState()) {
     if (builder.getScript().steps[0].type == builder.selenium2.stepTypes.get) {
       builder.deleteURLCookies(builder.getScript().steps[0].url);
     }
@@ -206,7 +212,7 @@ builder.selenium2.playback.wait = function(testFunction) {
         builder.selenium2.playback.recordResult({'success': success});
         return;
       }
-      if (builder.selenium2.playback.waitCycle++ >= builder.selenium2.playback.maxWaitCycles) {
+      if (builder.selenium2.playback.waitCycle++ >= builder.selenium2.playback.maxWaitCycles()) {
         window.clearInterval(builder.selenium2.playback.waitInterval);
         builder.selenium2.playback.stepStateCallback(builder.selenium2.playback, builder.selenium2.playback.script, builder.selenium2.playback.currentStep, builder.selenium2.playback.currentStepIndex(), builder.stepdisplay.state.NO_CHANGE, null, null, 0);
         builder.selenium2.playback.recordError("Wait timed out.");
@@ -218,7 +224,7 @@ builder.selenium2.playback.wait = function(testFunction) {
         builder.selenium2.playback.shutdown();
         return;
       }
-      builder.selenium2.playback.stepStateCallback(builder.selenium2.playback, builder.selenium2.playback.script, builder.selenium2.playback.currentStep, builder.selenium2.playback.currentStepIndex(), builder.stepdisplay.state.NO_CHANGE, null, null, 1 + builder.selenium2.playback.waitCycle * 99 / builder.selenium2.playback.maxWaitCycles);
+      builder.selenium2.playback.stepStateCallback(builder.selenium2.playback, builder.selenium2.playback.script, builder.selenium2.playback.currentStep, builder.selenium2.playback.currentStepIndex(), builder.stepdisplay.state.NO_CHANGE, null, null, 1 + builder.selenium2.playback.waitCycle * 99 / builder.selenium2.playback.maxWaitCycles());
     });
   }, builder.selenium2.playback.waitIntervalAmount);
 };
@@ -241,7 +247,7 @@ builder.selenium2.playback.continueFindingElement = function(locator, callback, 
       callback,
       /* errorCallback */
       function(e) {
-        if (builder.selenium2.playback.implicitWaitCycle++ >= builder.selenium2.playback.maxImplicitWaitCycles) {
+        if (builder.selenium2.playback.implicitWaitCycle++ >= builder.selenium2.playback.maxImplicitWaitCycles()) {
           if (errorCallback) {
             errorCallback(e);
           } else {
@@ -332,6 +338,10 @@ builder.selenium2.playback.param = function(pName) {
 builder.selenium2.playback.canPlayback = function(stepType) {
   return !!builder.selenium2.playback.playbackFunctions[stepType.getName()];
 };
+
+function str(v) {
+  return "" + v;
+}
 
 builder.selenium2.playback.playbackFunctions = {
   "print": function() {
@@ -1083,15 +1093,19 @@ builder.selenium2.playback.playbackFunctions = {
     });
   },
   "acceptAlert": function() {
-    builder.selenium2.playback.execute('acceptAlert', {});
+    setTimeout(function() {
+      builder.selenium2.playback.execute('acceptAlert', {});
+    }, 1000);
   },
   "dismissAlert": function() {
-    builder.selenium2.playback.execute('dismissAlert', {});
+    setTimeout(function() {
+      builder.selenium2.playback.execute('dismissAlert', {});
+    }, 1000);
   },
   
   "verifyEval": function() {
     builder.selenium2.playback.execute('executeScript', { 'script': builder.selenium2.playback.param("script"), 'args': [] }, function(result) {
-      if (result.value == builder.selenium2.playback.param("value")) {
+      if (str(result.value) == builder.selenium2.playback.param("value")) {
         builder.selenium2.playback.recordResult({success: true});
       } else {
         builder.selenium2.playback.recordResult({success: false, message: _t('sel2_eval_false', result.value, builder.selenium2.playback.param("value"))});
@@ -1102,7 +1116,7 @@ builder.selenium2.playback.playbackFunctions = {
   },
   "assertEval": function() {
     builder.selenium2.playback.execute('executeScript', { 'script': builder.selenium2.playback.param("script"), 'args': [] }, function(result) {
-      if (result.value == builder.selenium2.playback.param("value")) {
+      if (str(result.value) == builder.selenium2.playback.param("value")) {
         builder.selenium2.playback.recordResult({success: true});
       } else {
         builder.selenium2.playback.recordError(_t('sel2_eval_false', result.value, builder.selenium2.playback.param("value")));
@@ -1114,13 +1128,13 @@ builder.selenium2.playback.playbackFunctions = {
   "waitForEval": function() {
     builder.selenium2.playback.wait(function(callback) {
       builder.selenium2.playback.execute('executeScript', { 'script': builder.selenium2.playback.param("script"), 'args': [] }, function(result) {
-        callback(result.value == builder.selenium2.playback.param("value"));
+        callback(str(result.value) == builder.selenium2.playback.param("value"));
       }, /*error*/ function() { callback(false); });
     });
   },
   "storeEval": function() {
     builder.selenium2.playback.execute('executeScript', { 'script': builder.selenium2.playback.param("script"), 'args': [] }, function(result) {
-      builder.selenium2.playback.vars[builder.selenium2.playback.param("variable")] = result.value;
+      builder.selenium2.playback.vars[builder.selenium2.playback.param("variable")] = str(result.value);
       builder.selenium2.playback.recordResult({success: true});
     }, /*error*/ function() {
       builder.selenium2.playback.recordError(_t('sel2_eval_failed'));
